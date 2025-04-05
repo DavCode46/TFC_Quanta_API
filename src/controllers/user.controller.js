@@ -5,7 +5,7 @@ import nodemailer from 'nodemailer';
 import ErrorModel from '../models/Error.model.js';
 import UserModel from '../models/User.model.js';
 
-const PASSWORD_PATTERN = ' /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;'
+const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 const PHONE_NUMBER_PATTERN = /^\d{9}$/;
 
 const transporter = nodemailer.createTransport({
@@ -25,7 +25,7 @@ const transporter = nodemailer.createTransport({
 */
 
 const register = async (req, res, next) => {
-
+  console.log('Body', req.body)
   try {
     const { username, email, phone, password, confirmPassword } = req.body;
     if (!username || !email || !phone || !password || !confirmPassword) {
@@ -67,11 +67,11 @@ const register = async (req, res, next) => {
       TO DO: SEND REGISTRATION EMAIL
     */
 
-    return res.status(201).json(`Usuario ${username.email} registrado con éxito`);
+    return res.status(201).json(`Usuario ${user.email} registrado con éxito`);
 
 
   } catch (error) {
-    return next(new ErrorModel("Registro fallido ", 422))
+    return next(new ErrorModel(error, 422))
   }
 }
 
