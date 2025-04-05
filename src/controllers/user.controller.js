@@ -74,3 +74,8 @@ const register = async (req, res, next) => {
     return next(new ErrorModel("Registro fallido ", 422))
   }
 }
+
+export {
+  register
+};
+
