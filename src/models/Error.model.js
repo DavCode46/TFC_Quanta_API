@@ -4,3 +4,5 @@ class ErrorModel extends Error {
     this.statusCode = statusCode;
   }
 }
+
+export default ErrorModel;
