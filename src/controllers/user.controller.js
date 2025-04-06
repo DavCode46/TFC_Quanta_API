@@ -101,7 +101,18 @@ const login = async (req, res, next) => {
   }
 }
 
-export {
-  login, register
-};
+const getUserByEmail = async (req, res, next) => {
+  try {
+      const {email} = req.body
+      const user = await UserModel.findOne({ email: email}).select('-password');
+      if(!user) {
+        return res.status(404).json({error: 'Usuario no encontrado'})
+      }
+      return res.status(200).json(user);
+  }catch(error) {
+    return res.status(500).json({error: 'Error al obtener el usuario'})
+  }
+}
+
+export { getUserByEmail, login, register };
 
