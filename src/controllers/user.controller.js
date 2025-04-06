@@ -1,21 +1,14 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import nodemailer from 'nodemailer';
 
 import ErrorModel from '../models/Error.model.js';
 import UserModel from '../models/User.model.js';
+import { sendRegistrationEmail } from '../utils/sendEmail.js';
 
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 const PHONE_NUMBER_PATTERN = /^\d{9}$/;
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
-  }
-})
+
 
 /*
   REGISTER A USER
@@ -63,71 +56,7 @@ const register = async (req, res, next) => {
 
     await user.save();
 
-    /*
-      TO DO: SEND REGISTRATION EMAIL
-    */
-      transporter.sendMail({
-        from: "davidblanco1993@gmail.com",
-        to: email,
-        subject: "¡Registro Quanta!",
-        html: `<!DOCTYPE html>
-        <html lang="es">
-        <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>¡Registro exitoso!</title>
-        <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            color: #6431ee;
-            text-align: center;
-        }
-        p {
-            color: #555;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .button {
-            display: inline-block;
-            background-color: #6431ee;
-            color: white;
-            padding: 12px 24px;
-            text-decoration: none;
-            border-radius: 5px;
-            text-align: center;
-            transition: background-color 0.3s ease;
-        }
-        .button:hover {
-            background-color:rgb(78, 38, 189);
-        }
-        </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>¡Registro exitoso!</h1>
-                <p>Gracias por registrarte. Te has registrado exitosamente en Quanta.</p>
-                <p>Por favor, haz clic en el botón a continuación para iniciar sesión:</p>
-                <div style="text-align: center;">
-                    <a class="button" style="color: white;" href=${process.env.CLIENT_URL}>Iniciar sesión</a>
-                </div>
-            </div>
-        </body>
-        </html>
-        `,
-      });
+    await sendRegistrationEmail(email, process.env.CLIENT_URL)
 
     return res.status(201).json(`Usuario ${user.email} registrado con éxito`);
 
@@ -137,7 +66,42 @@ const register = async (req, res, next) => {
   }
 }
 
+const login = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    if(!email || !password) {
+      return next(new ErrorModel('Todos los campos son obligatorios', 400))
+    }
+
+    const lowerEmail = email.toLowerCase();
+
+    const user = await UserModel.findOne( { email: lowerEmail });
+    if(!user) {
+      return next(new ErrorModel('Credenciales incorrectas', 400))
+    }
+    const isMatchPassword = await bcrypt.compare(password, user.password);
+    if(!isMatchPassword) {
+      return next(new ErrorModel('Credenciales incorrectas', 400));
+    }
+
+    const { _id: id, username, email: userEmail, phone} = user
+    const token = jwt.sign({ id, username, userEmail, phone  }, process.env.JWT_SECRET, {
+      expiresIn: '1d'
+    });
+
+    return res.status(200).json({
+      token,
+      id,
+      username,
+      email,
+      phone,
+    })
+  } catch(error) {
+    return next(new ErrorModel(error, 422))
+  }
+}
+
 export {
-  register
+  login, register
 };
 
