@@ -56,7 +56,7 @@ const register = async (req, res, next) => {
 
     await user.save();
 
-    await sendRegistrationEmail(email, process.env.CLIENT_URL)
+   // await sendRegistrationEmail(email, process.env.CLIENT_URL)
 
     return res.status(201).json(`Usuario ${user.email} registrado con éxito`);
 
