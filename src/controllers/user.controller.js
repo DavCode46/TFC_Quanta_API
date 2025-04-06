@@ -22,26 +22,26 @@ const register = async (req, res, next) => {
   try {
     const { username, email, phone, password, confirmPassword } = req.body;
     if (!username || !email || !phone || !password || !confirmPassword) {
-      return next(new ErrorModel('Todos los campos son obligatorios', 422))
+      return res.status(400).json({error: 'Todos los campos son obligatorios'})
     }
 
     const lowerEmail = email.toLowerCase();
 
     const emailExists = await UserModel.findOne({ email: lowerEmail });
     if (emailExists) {
-      return next(new ErrorModel('El correo ya está registrado', 400))
+      return res.status(400).json({error: 'El correo ya está registrado'})
     }
 
     if (!PHONE_NUMBER_PATTERN.test(phone)) {
-      return next(new ErrorModel('El número de teléfono no es válido', 400))
+      return res.status(400).json({error: 'El número de teléfono no es válido'})
     }
 
     if (!PASSWORD_PATTERN.test(password)) {
-      return next(new ErrorModel('La contraseña debe contener al menos 8 caracteres, una letra mayúscula, una minúscula y un caracter especial', 400))
+      return res.status(400).json({error: 'La contraseña debe contener al menos 8 caracteres, una letra mayúscula, una minúscula y un caracter especial'})
     }
 
     if (password != confirmPassword) {
-      return next(new ErrorModel('Las contraseñas no coinciden', 400))
+      return res.status(400).json({error: 'Las contraseñas no coinciden'})
     }
 
     const salt = await bcrypt.genSalt(12);
@@ -62,7 +62,7 @@ const register = async (req, res, next) => {
 
 
   } catch (error) {
-    return next(new ErrorModel(error, 422))
+    return res.status(500).json({error: 'Error al registrar el usuario'})
   }
 }
 
@@ -70,18 +70,18 @@ const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     if(!email || !password) {
-      return next(new ErrorModel('Todos los campos son obligatorios', 400))
+      return res.status(400).json({error: 'Todos los campos son obligatorios'})
     }
 
     const lowerEmail = email.toLowerCase();
 
     const user = await UserModel.findOne( { email: lowerEmail });
     if(!user) {
-      return next(new ErrorModel('Credenciales incorrectas', 400))
+      return res.status(400).json({error: 'Credenciales incorrectas'})
     }
     const isMatchPassword = await bcrypt.compare(password, user.password);
     if(!isMatchPassword) {
-      return next(new ErrorModel('Credenciales incorrectas', 400));
+      return res.status(400).json({error: 'Credenciales incorrectas'})
     }
 
     const { _id: id, username, email: userEmail, phone} = user
@@ -97,7 +97,7 @@ const login = async (req, res, next) => {
       phone,
     })
   } catch(error) {
-    return next(new ErrorModel(error, 422))
+    return res.status(500).json({error: 'Error al iniciar sesión'})
   }
 }
 
