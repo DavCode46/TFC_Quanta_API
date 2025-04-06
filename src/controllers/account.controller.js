@@ -31,7 +31,28 @@ const createAccount = async (req, res, next) => {
   }
 }
 
+const deleteAccount = async (req, res, next) => {
+  try {
+    const { accountNumber } = req.body;
+
+    const account = await Account.findOne( { account_number: accountNumber });
+
+    if(!account) {
+      return next(new ErrorModel('La cuenta no existe', 404));
+    }
+
+    await account.deleteOne();
+    return res.status(200).json({
+      message: 'Cuenta eliminada con éxito'
+    })
+  }catch(error){
+    console.error(error)
+    return next(new ErrorModel('Error al eliminar la cuenta', 500))
+  }
+}
+
 export {
-  createAccount
+  createAccount,
+  deleteAccount
 };
 
