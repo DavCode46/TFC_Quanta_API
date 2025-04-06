@@ -33,9 +33,16 @@ const createAccount = async (req, res, next) => {
 
 const deleteAccount = async (req, res, next) => {
   try {
-    const { accountNumber } = req.body;
+    const { accountNumber, userId } = req.body;
 
     const account = await Account.findOne( { account_number: accountNumber });
+    console.log(`Account: ${account}`)
+    console.log(`{User}: ${userId} - {Account}: ${accountNumber}`)
+
+
+    if(userId.toString() !== account.user.toString()) {
+      return next(new ErrorModel('No tienes permiso para eliminar esta cuenta', 403));
+    }
 
     if(!account) {
       return next(new ErrorModel('La cuenta no existe', 404));
