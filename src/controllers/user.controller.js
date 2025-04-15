@@ -1,8 +1,10 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+import AccountModel from '../models/Account.model.js';
 import ErrorModel from '../models/Error.model.js';
 import UserModel from '../models/User.model.js';
+import generateUniqueIBAN from '../utils/generateAccount.js';
 import { sendRegistrationEmail } from '../utils/sendEmail.js';
 
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -54,11 +56,22 @@ const register = async (req, res, next) => {
       phone: phone,
     })
 
-    await user.save();
+   await user.save();
+
+   const savedUser = await UserModel.findOne( { email: lowerEmail });
+
+   const randomAccountNumber = await generateUniqueIBAN();
+
+   const newAccount = new AccountModel({
+      user: savedUser._id,
+      account_number: randomAccountNumber
+   });
+
+   await newAccount.save();
 
    // await sendRegistrationEmail(email, process.env.CLIENT_URL)
 
-    return res.status(201).json(`Usuario ${user.email} registrado con éxito`);
+    return res.status(201).json(`Usuario ${user.email} registrado con éxito y cuenta creada con número ${newAccount.account_number}`);
 
 
   } catch (error) {

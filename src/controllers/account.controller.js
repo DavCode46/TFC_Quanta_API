@@ -58,8 +58,29 @@ const deleteAccount = async (req, res, next) => {
   }
 }
 
+const getAccountByUserId = async (req, res, next) => {
+  try{
+    const { userId } = req.body;
+
+    const account = await Account.findOne( { user: userId });
+
+    if(!account) {
+      return res.status(404).json({error: 'Cuenta no encontrada'})
+    }
+
+    return res.status(200).json({
+      message: 'Cuenta obtenida con éxito',
+      account
+    })
+  }catch(error) {
+    console.error(error)
+    return res.status(500).json({error: 'Error al obtener la cuenta'})
+  }
+}
+
 export {
   createAccount,
-  deleteAccount
+  deleteAccount,
+  getAccountByUserId
 };
 
