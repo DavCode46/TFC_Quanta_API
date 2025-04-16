@@ -60,9 +60,14 @@ const deleteAccount = async (req, res, next) => {
 
 const getAccountByUserId = async (req, res, next) => {
   try{
-    const { userId } = req.body;
+    const { id } = req.params;
+    console.log('userId', id)
+    if(!id) {
+      return res.status(400).json({error: 'El id de usuario es obligatorio'})
+    }
 
-    const account = await Account.findOne( { user: userId });
+    const account = await Account.findOne( { user: id });
+    console.log(account)
 
     if(!account) {
       return res.status(404).json({error: 'Cuenta no encontrada'})

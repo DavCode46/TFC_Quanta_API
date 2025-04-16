@@ -7,6 +7,7 @@ const authenticate = (req, res, next ) => {
     const token = Authorization.split(' ')[1];
     jwt.verify(token, process.env.JWT_SECRET, (error, info) => {
       if(error) {
+        console.log('error', error);
         return next(new ErrorModel('No autorizado', 403));
       }else {
         req.user = info;
