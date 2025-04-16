@@ -97,6 +97,7 @@ const transferMoney = async (req, res, next) => {
 
     const { id, amount, origin_account, destination_account } = req.body
 
+
     if(!id || !amount || !origin_account || !destination_account) {
       return next(new ErrorModel('Faltan datos', 400));
     }
