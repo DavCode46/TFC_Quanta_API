@@ -6,7 +6,7 @@ import Transaction from '../models/Transaction.model.js';
 const addMoney = async (req, res, next) => {
 
   try{
-    console.log('Body', req.body)
+
     const { id, amount, account_number } = req.body
 
     if(!id || !amount || !account_number) {
