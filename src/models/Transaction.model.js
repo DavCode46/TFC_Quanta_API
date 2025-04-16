@@ -12,11 +12,11 @@ const transactionSchema = new Schema({
   type: {
     type: String,
     enum: ['transferencia', 'ingreso', 'retirada'],
-    amount: {
-      type: Number,
-      required: true
-    },
-  }
+  },
+  amount: {
+    type: Number,
+    required: true
+  },
 }, { timestamps: true });
 
 export default model('Transaction', transactionSchema);

@@ -2,6 +2,8 @@ import jwt from 'jsonwebtoken';
 import ErrorModel from '../models/Error.model.js';
 
 const authenticate = (req, res, next ) => {
+
+
   const Authorization = req.headers.Authorization || req.headers.authorization;
   if(Authorization && Authorization.startsWith('Bearer')) {
     const token = Authorization.split(' ')[1];
