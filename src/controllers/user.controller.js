@@ -1,21 +1,16 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import nodemailer from 'nodemailer';
 
+import AccountModel from '../models/Account.model.js';
 import ErrorModel from '../models/Error.model.js';
 import UserModel from '../models/User.model.js';
+import generateUniqueIBAN from '../utils/generateAccount.js';
+import { sendRegistrationEmail } from '../utils/sendEmail.js';
 
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 const PHONE_NUMBER_PATTERN = /^\d{9}$/;
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
-  }
-})
+
 
 /*
   REGISTER A USER
@@ -29,26 +24,26 @@ const register = async (req, res, next) => {
   try {
     const { username, email, phone, password, confirmPassword } = req.body;
     if (!username || !email || !phone || !password || !confirmPassword) {
-      return next(new ErrorModel('Todos los campos son obligatorios', 422))
+      return res.status(400).json({error: 'Todos los campos son obligatorios'})
     }
 
     const lowerEmail = email.toLowerCase();
 
     const emailExists = await UserModel.findOne({ email: lowerEmail });
     if (emailExists) {
-      return next(new ErrorModel('El correo ya está registrado', 400))
+      return res.status(400).json({error: 'El correo ya está registrado'})
     }
 
     if (!PHONE_NUMBER_PATTERN.test(phone)) {
-      return next(new ErrorModel('El número de teléfono no es válido', 400))
+      return res.status(400).json({error: 'El número de teléfono no es válido'})
     }
 
     if (!PASSWORD_PATTERN.test(password)) {
-      return next(new ErrorModel('La contraseña debe contener al menos 8 caracteres, una letra mayúscula, una minúscula y un caracter especial', 400))
+      return res.status(400).json({error: 'La contraseña debe contener al menos 8 caracteres, una letra mayúscula, una minúscula y un caracter especial'})
     }
 
     if (password != confirmPassword) {
-      return next(new ErrorModel('Las contraseñas no coinciden', 400))
+      return res.status(400).json({error: 'Las contraseñas no coinciden'})
     }
 
     const salt = await bcrypt.genSalt(12);
@@ -61,21 +56,83 @@ const register = async (req, res, next) => {
       phone: phone,
     })
 
-    await user.save();
+   await user.save();
 
-    /*
-      TO DO: SEND REGISTRATION EMAIL
-    */
+   const savedUser = await UserModel.findOne( { email: lowerEmail });
 
-    return res.status(201).json(`Usuario ${user.email} registrado con éxito`);
+   const randomAccountNumber = await generateUniqueIBAN();
+
+   const newAccount = new AccountModel({
+      user: savedUser._id,
+      account_number: randomAccountNumber
+   });
+
+   await newAccount.save();
+
+   // await sendRegistrationEmail(email, process.env.CLIENT_URL)
+
+    return res.status(201).json(`Usuario ${user.email} registrado con éxito y cuenta creada con número ${newAccount.account_number}`);
 
 
   } catch (error) {
-    return next(new ErrorModel(error, 422))
+    return res.status(500).json({error: 'Error al registrar el usuario'})
   }
 }
 
-export {
-  register
-};
+const login = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    if(!email || !password) {
+      return res.status(400).json({error: 'Todos los campos son obligatorios'})
+    }
+
+    const lowerEmail = email.toLowerCase();
+
+    const user = await UserModel.findOne( { email: lowerEmail });
+    if(!user) {
+      return res.status(400).json({error: 'Credenciales incorrectas'})
+    }
+    const isMatchPassword = await bcrypt.compare(password, user.password);
+    if(!isMatchPassword) {
+      return res.status(400).json({error: 'Credenciales incorrectas'})
+    }
+
+    const { _id: id, username, email: userEmail, phone} = user
+    const token = jwt.sign({ id, username, userEmail, phone  }, process.env.JWT_SECRET, {
+      expiresIn: '1d'
+    });
+
+    return res.status(200).json({
+      token,
+      id,
+      username,
+      email,
+      phone,
+    })
+  } catch(error) {
+    return res.status(500).json({error: 'Error al iniciar sesión'})
+  }
+}
+
+const getUserByEmail = async (req, res, next) => {
+  try {
+      const {email} = req.params
+
+      if(!email) {
+        return res.status(400).json({error: 'El correo es obligatorio'})
+      }
+      const lowerEmail = email.toLowerCase();
+      const user = await UserModel.findOne({ email: lowerEmail}).select('-password');
+
+      if(!user) {
+        return res.status(404).json({error: 'Usuario no encontrado'})
+      }
+
+      return res.status(200).json(user);
+  }catch(error) {
+    return res.status(500).json({error: 'Error al obtener el usuario'})
+  }
+}
+
+export { getUserByEmail, login, register };
 
