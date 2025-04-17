@@ -15,7 +15,7 @@ const transactionSchema = new Schema({
   },
   subject: {
     type: String,
-    required: true
+    required: false
   },
   amount: {
     type: Number,
