@@ -8,9 +8,9 @@ const addMoney = async (req, res, next) => {
 
   try{
 
-    const { id, amount, account_number } = req.body
+    const { amount, account_number } = req.body
 
-    if(!id || !amount || !account_number) {
+    if(!amount || !account_number) {
       return next(new ErrorModel('Faltan datos', 400));
     }
     if(amount <= 0) {
