@@ -27,7 +27,7 @@ const createAccount = async (req, res, next) => {
     })
   }catch(error) {
     console.error(error)
-    return next(new ErrorModel('Error al crear la cuenta', 500))
+    return res.status(500).json({error: 'Error al crear la cuenta'})
   }
 }
 
@@ -41,11 +41,11 @@ const deleteAccount = async (req, res, next) => {
 
 
     if(userId.toString() !== account.user.toString()) {
-      return next(new ErrorModel('No tienes permiso para eliminar esta cuenta', 403));
+      return res.status(403).json({error: 'Error al eliminar la cuenta'})
     }
 
     if(!account) {
-      return next(new ErrorModel('La cuenta no existe', 404));
+      return res.status(404).json({error: 'La cuenta no existe'})
     }
 
     await account.deleteOne();
@@ -54,7 +54,7 @@ const deleteAccount = async (req, res, next) => {
     })
   }catch(error){
     console.error(error)
-    return next(new ErrorModel('Error al eliminar la cuenta', 500))
+    return res.status(500).json({error: 'Error al eliminar la cuenta'})
   }
 }
 
