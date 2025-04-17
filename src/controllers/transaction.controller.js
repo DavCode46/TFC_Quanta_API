@@ -1,6 +1,7 @@
 import Account from '../models/Account.model.js';
 import ErrorModel from '../models/Error.model.js';
 import Transaction from '../models/Transaction.model.js';
+import User from '../models/User.model.js';
 
 
 
@@ -8,19 +9,20 @@ const addMoney = async (req, res, next) => {
 
   try{
 
-    const { id, amount, account_number } = req.body
+    const { amount, account_number } = req.body
 
-    if(!id || !amount || !account_number) {
-      return next(new ErrorModel('Faltan datos', 400));
+
+    if(!amount || !account_number) {
+      return res.status(400).json({error: 'Todos los campos son requeridos'})
     }
     if(amount <= 0) {
-      return next(new ErrorModel('La cantidad debe ser mayor que 0', 400));
+      return res.status(400).json({error: 'La cantidad debe ser mayor que 0'})
     }
 
       const account = await Account.findOne( { account_number: account_number});
 
       if(!account) {
-        return next(new ErrorModel('La cuenta no existe', 404));
+        return res.status(404).json({error: 'La cuenta no existe'})
       }
 
       account.balance += amount;
@@ -40,7 +42,7 @@ const addMoney = async (req, res, next) => {
       })
   }catch(error) {
     console.error(error);
-    return next(new ErrorModel(error, 500));
+    return res.status(500).json({error: 'Error al ingresar dinero'})
   }
 
 }
@@ -50,23 +52,23 @@ const withdrawMoney = async (req, res, next) => {
 
   try{
 
-    const { id, amount, account_number } = req.body
+    const {  amount, account_number } = req.body
 
-    if(!id || !amount || !account_number) {
-      return next(new ErrorModel('Faltan datos', 400));
+    if(!amount || !account_number) {
+      return res.status(400).json({error: 'Todos los campos son obligatorios'})
     }
     if(amount <= 0) {
-      return next(new ErrorModel('La cantidad debe ser mayor que 0', 400));
+      return res.status(400).json({error: 'La cantidad debe ser mayor que 0'})
     }
 
       const account = await Account.findOne( { account_number: account_number});
 
       if(account.balance < amount) {
-        return next(new ErrorModel('Saldo insuficiente', 400));
+        return res.status(400).json({error: 'Saldo insuficiente'})
       }
 
       if(!account) {
-        return next(new ErrorModel('La cuenta no existe', 404));
+        return res.status(404).json({error: 'La cuenta no existe'})
       }
 
       account.balance -= amount;
@@ -86,7 +88,7 @@ const withdrawMoney = async (req, res, next) => {
       })
   }catch(error) {
     console.error(error);
-    return next(new ErrorModel(error, 500));
+    return res.status(500).json({error: 'Ha ocurrido un error al retirar dinero'})
   }
 }
 
@@ -95,26 +97,26 @@ const transferMoney = async (req, res, next) => {
 
   try{
 
-    const { id, amount, origin_account, destination_account } = req.body
+    const { amount, origin_account, destination_account } = req.body
 
 
-    if(!id || !amount || !origin_account || !destination_account) {
-      return next(new ErrorModel('Faltan datos', 400));
+    if(!amount || !origin_account || !destination_account) {
+      return res.status(400).json({error: 'Todos los campos son obligatorios'})
     }
     if(amount <= 0) {
-      return next(new ErrorModel('La cantidad debe ser mayor que 0', 400));
+      return res.status(400).json({error: 'La cantidad debe ser mayor que 0'})
     }
 
       const originAccount = await Account.findOne( { account_number: origin_account});
       const destinationAccount = await Account.findOne( { account_number: destination_account});
       if(!originAccount) {
-        return next(new ErrorModel('La cuenta de origen no existe', 404));
+        return res.status(404).json({error: 'La cuenta de origen no existe'})
       }
       if(!destinationAccount) {
-        return next(new ErrorModel('La cuenta de destino no existe', 404));
+        return res.status(404).json({error: 'La cuenta de destino no existe'})
       }
       if(originAccount.balance < amount) {
-        return next(new ErrorModel('Saldo insuficiente', 400));
+        return res.status(400).json({error: 'Saldo insuficiente'})
       }
       originAccount.balance -= amount;
 
@@ -139,13 +141,66 @@ const transferMoney = async (req, res, next) => {
       })
   }catch(error) {
     console.error(error);
-    return next(new ErrorModel(error, 500));
+    return res.status(500).json({error: 'Ha ocurrido un error al realizar la transferencia'})
   }
 
 }
 
+const getTransactionsByUser = async (req, res, next) => {
+  try{
+      const { email } = req.params;
+
+      if(!email) {
+        return res.status(400).json({error: 'El email es requerido'})
+      }
+
+      const lowerEmail = email.toLowerCase();
+
+      const user = await User.findOne( { email: lowerEmail }).select('-password')
+
+
+
+      if(!user) {
+        return res.status(404).json({error: 'El usuario no existe'})
+      }
+
+      const account = await Account.findOne({ user: user._id });
+
+
+      if(!account) {
+        return res.status(404).json({error: 'La cuenta no existe'})
+      }
+
+      const transactions = await Transaction.find({
+          $or: [
+            { origin_account: account._id },
+            { destination_account: account._id }
+          ]
+        }).populate('origin_account')
+        .populate('destination_account')
+
+        if (!transactions || transactions.length === 0) {
+          return res.status(200).json({
+            message: 'No se encontraron transacciones',
+            transactions: []
+          });
+        }
+
+
+      return res.status(200).json({
+          message: 'Transacciones obtenidas con éxito',
+          transactions: transactions
+      })
+  } catch(error) {
+
+    return res.status(500).json({
+      error: 'Error al obtener las transacciones',
+    })
+  }
+}
+
 
 export {
-  addMoney, transferMoney, withdrawMoney
+  addMoney, getTransactionsByUser, transferMoney, withdrawMoney
 };
 

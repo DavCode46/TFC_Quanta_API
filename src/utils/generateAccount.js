@@ -2,13 +2,18 @@ import Account from '../models/Account.model.js';
 
 
 const generateAccountNumber = () => {
-  const banco = String(Math.floor(Math.random() * 9999) + 1000);
-  const sucursal = String(Math.floor(Math.random() * 9999) + 1000);
-  const cuenta = String(Math.floor(Math.random() * 9999999999) + 1000000000);
+  const bank = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+  const sucursal = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+  const dc = String(Math.floor(Math.random() * 100)).padStart(2, '0');
+  const account = String(Math.floor(Math.random() * 10000000000)).padStart(10, '0');
 
-  const numeroCuenta = `ES${Math.floor(Math.random() * 99) + 10} ${banco} ${sucursal} ${cuenta}`;
-  return numeroCuenta;
-}
+  const ccc = `${bank}${sucursal}${dc}${account}`;
+
+  const iban = String(Math.floor(Math.random() * 90) + 10);
+
+  return `ES${iban}${ccc}`;
+};
+
 
 const generateUniqueIBAN = async () => {
   let iban = generateAccountNumber();

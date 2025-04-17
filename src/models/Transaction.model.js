@@ -13,6 +13,10 @@ const transactionSchema = new Schema({
     type: String,
     enum: ['transferencia', 'ingreso', 'retirada'],
   },
+  subject: {
+    type: String,
+    required: false
+  },
   amount: {
     type: Number,
     required: true

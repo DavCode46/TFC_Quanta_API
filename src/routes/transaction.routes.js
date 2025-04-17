@@ -7,6 +7,7 @@ const router = Router();
 router.post('/add', authenticate, transactionController.addMoney)
 router.post('/withdraw', authenticate, transactionController.withdrawMoney)
 router.post('/transfer', authenticate, transactionController.transferMoney)
+router.get('/account/:email', authenticate, transactionController.getTransactionsByUser)
 
 export default router
 
