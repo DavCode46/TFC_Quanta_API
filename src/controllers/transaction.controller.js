@@ -158,7 +158,7 @@ const getTransactionsByUser = async (req, res, next) => {
 
       const user = await User.findOne( { email: lowerEmail }).select('-password')
 
-      console.log('user', user)
+
 
       if(!user) {
         return res.status(404).json({error: 'El usuario no existe'})
@@ -166,7 +166,7 @@ const getTransactionsByUser = async (req, res, next) => {
 
       const account = await Account.findOne({ user: user._id });
 
-      console.log('account', account)
+
       if(!account) {
         return res.status(404).json({error: 'La cuenta no existe'})
       }
@@ -179,16 +179,20 @@ const getTransactionsByUser = async (req, res, next) => {
         }).populate('origin_account')
         .populate('destination_account')
 
-        if(!transactions || transactions.length === 0) {
-          return res.status(404).json({error: 'No se encontraron transacciones'})
+        if (!transactions || transactions.length === 0) {
+          return res.status(200).json({
+            message: 'No se encontraron transacciones',
+            transactions: []
+          });
         }
 
-        console.log('transactions', transactions)
+
       return res.status(200).json({
           message: 'Transacciones obtenidas con éxito',
           transactions: transactions
       })
   } catch(error) {
+
     return res.status(500).json({
       error: 'Error al obtener las transacciones',
     })
