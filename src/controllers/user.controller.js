@@ -1,5 +1,12 @@
 import bcrypt from "bcryptjs";
+import fs from "fs";
 import jwt from "jsonwebtoken";
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
+import { v4 as uuid } from "uuid";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 import AccountModel from "../models/Account.model.js";
 import UserModel from "../models/User.model.js";
@@ -92,6 +99,7 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log(req.body);
     if (!email || !password) {
       return res
         .status(400)
@@ -101,15 +109,18 @@ const login = async (req, res) => {
     const lowerEmail = email.toLowerCase();
 
     const user = await UserModel.findOne({ email: lowerEmail });
+    console.log(user);
+
     if (!user) {
       return res.status(400).json({ error: "Credenciales incorrectas" });
     }
     const isMatchPassword = await bcrypt.compare(password, user.password);
+    console.log(isMatchPassword);
     if (!isMatchPassword) {
       return res.status(400).json({ error: "Credenciales incorrectas" });
     }
 
-    const { _id: id, username, email: userEmail, phone } = user;
+    const { _id: id, username, email: userEmail, phone, profileImage } = user;
     const token = jwt.sign(
       { id, username, userEmail, phone },
       process.env.JWT_SECRET,
@@ -124,6 +135,7 @@ const login = async (req, res) => {
       username,
       email,
       phone,
+      profileImage,
     });
   } catch (error) {
     return res.status(500).json({ error: "Error al iniciar sesión" });
@@ -153,7 +165,7 @@ const updateUserInfo = async (req, res) => {
     const emailExists = await UserModel.findOne({ email: email }).select(
       "-password"
     );
-    if (emailExists && emailExists._id.toString() !== userId) {
+    if (emailExists && emailExists._id !== userId) {
       return res.status(400).json({ error: "El correo ya está registrado" });
     }
 
@@ -161,11 +173,19 @@ const updateUserInfo = async (req, res) => {
     if (!isMatched) {
       return res.status(400).json({ error: "Credenciales incorrectas" });
     }
+    const lowerEmail = email.toLowerCase();
 
     const updateFields = {
       phone,
-      email,
+      email: lowerEmail,
     };
+
+    const samePassword = await bcrypt.compare(newPassword, user.password);
+    if (samePassword) {
+      return res.status(400).json({
+        error: "La nueva contraseña no puede ser la misma que la actual",
+      });
+    }
 
     if (newPassword) {
       const salt = await bcrypt.genSalt(12);
@@ -190,21 +210,7 @@ const updateUserInfo = async (req, res) => {
       phone: phoneNumber,
     } = updatedUser;
 
-    const token = jwt.sign(
-      {
-        id,
-        username,
-        userEmail,
-        phoneNumber,
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "1d",
-      }
-    );
-
     return res.status(200).json({
-      token,
       id,
       username,
       email: userEmail,
@@ -213,6 +219,70 @@ const updateUserInfo = async (req, res) => {
   } catch (error) {
     console.log(error);
     return res.status(500).json({ error: "Error al actualizar el usuario" });
+  }
+};
+const changeImage = async (req, res) => {
+  try {
+    if (!req.files?.profileImage) {
+      return res.status(400).json({ error: "Selecciona una imagen" });
+    }
+
+    const { email } = req.params;
+    const lowerEmail = email.toLowerCase();
+    const { profileImage } = req.files;
+
+    /*
+    Comentado porque las fotos del emulador pesan mas de 2 Mb
+    if (profileImage.size > 2000000) {
+      return res
+        .status(400)
+        .json({ error: "La imagen no puede superar los 2Mb" });
+    }
+        */
+
+    const user = await UserModel.findOne({ email: lowerEmail }).select(
+      "-password"
+    );
+    if (!user) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    if (user.profileImage) {
+      console.log("Intentando eliminar imagen anterior");
+      try {
+        await fs.promises.unlink(
+          path.join(__dirname, "..", "uploads", user.profileImage)
+        );
+        console.log("Imagen anterior eliminada");
+      } catch (err) {
+        console.error("Error al eliminar la imagen anterior", err);
+      }
+    }
+
+    const fileName = profileImage.name;
+    const splitName = fileName.split(".");
+    const newFileName =
+      splitName[0] + uuid() + "." + splitName[splitName.length - 1];
+
+    await profileImage.mv(path.join(__dirname, "..", "uploads", newFileName));
+
+    const updatedUser = await UserModel.findByIdAndUpdate(
+      user._id,
+      { profileImage: newFileName },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "Error al actualizar la imagen" });
+    }
+
+    res.status(200).json({
+      message: "Imagen actualizada con éxito",
+      profileImage: updatedUser.profileImage,
+    });
+  } catch (error) {
+    console.error("Error en changeImage:", error);
+    return res.status(500).json({ error: "Error al actualizar la imagen" });
   }
 };
 
@@ -238,4 +308,4 @@ const getUserByEmail = async (req, res) => {
   }
 };
 
-export { getUserByEmail, login, register, updateUserInfo };
+export { changeImage, getUserByEmail, login, register, updateUserInfo };
