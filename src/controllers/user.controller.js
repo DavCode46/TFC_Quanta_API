@@ -1,5 +1,12 @@
 import bcrypt from "bcryptjs";
+import fs from "fs";
 import jwt from "jsonwebtoken";
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
+import { v4 as uuid } from "uuid";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 import AccountModel from "../models/Account.model.js";
 import UserModel from "../models/User.model.js";
@@ -214,6 +221,72 @@ const updateUserInfo = async (req, res) => {
   }
 };
 
+const changeImage = async (req, res) => {
+  try {
+    if (!req.files.profileImage) {
+      return res.status(400).json({ error: "Selecciona una imagen" });
+    }
+
+    const user = await UserModel.findOne({ email: req.user.email });
+    if (!user) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+    if (user.profileImage) {
+      fs.unlink(
+        path.join(__dirname, "..", "uploads", user.profileImage),
+        (err) => {
+          if (err) {
+            console.error("Error al eliminar la imagen anterior", err);
+          }
+        }
+      );
+
+      const { profileImage } = req.files;
+
+      if (profileImage.size > 2000000) {
+        return res
+          .status(400)
+          .json({ error: "La imagen no puede superar los 2Mb" });
+      }
+
+      const fileName = profileImage.name;
+      const splitName = fileName.split(".");
+      const newFileName =
+        splitName[0] + uuid() + "." + splitName[splitName.length - 1];
+      profileImage.mv(
+        path.join(__dirname, "..", "uploads", newFileName),
+        async (err) => {
+          if (err) {
+            return res.status(500).json({ error: "Error al subir la imagen" });
+          }
+
+          try {
+            const updatedUser = await UserModel.findByIdAndUpdate(
+              user._id,
+              { profileImage, newFileName },
+              { new: true }
+            );
+            if (!updatedUser) {
+              return res
+                .status(404)
+                .json({ error: "Error al actualizar la imagen" });
+            }
+            res.status(200).json({
+              message: "Imagen actualizada con éxito",
+              profileImage: updatedUser.profileImage,
+            });
+          } catch (error) {
+            return res.status(500).json({ error: "Error al subir la imagen" });
+          }
+        }
+      );
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: "Error al actualizar la imagen" });
+  }
+};
+
 const getUserByEmail = async (req, res) => {
   try {
     const { email } = req.params;
@@ -236,4 +309,4 @@ const getUserByEmail = async (req, res) => {
   }
 };
 
-export { getUserByEmail, login, register, updateUserInfo };
+export { changeImage, getUserByEmail, login, register, updateUserInfo };
