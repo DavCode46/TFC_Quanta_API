@@ -120,7 +120,7 @@ const login = async (req, res) => {
       return res.status(400).json({ error: "Credenciales incorrectas" });
     }
 
-    const { _id: id, username, email: userEmail, phone } = user;
+    const { _id: id, username, email: userEmail, phone, profileImage } = user;
     const token = jwt.sign(
       { id, username, userEmail, phone },
       process.env.JWT_SECRET,
@@ -135,6 +135,7 @@ const login = async (req, res) => {
       username,
       email,
       phone,
+      profileImage,
     });
   } catch (error) {
     return res.status(500).json({ error: "Error al iniciar sesión" });
