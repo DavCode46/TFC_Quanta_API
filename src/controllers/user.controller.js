@@ -220,69 +220,67 @@ const updateUserInfo = async (req, res) => {
     return res.status(500).json({ error: "Error al actualizar el usuario" });
   }
 };
-
 const changeImage = async (req, res) => {
   try {
-    if (!req.files.profileImage) {
+    if (!req.files?.profileImage) {
       return res.status(400).json({ error: "Selecciona una imagen" });
     }
 
-    const user = await UserModel.findOne({ email: req.user.email });
+    const { email } = req.params;
+    const lowerEmail = email.toLowerCase();
+    const { profileImage } = req.files;
+
+    /*
+    Comentado porque las fotos del emulador pesan mas de 2 Mb
+    if (profileImage.size > 2000000) {
+      return res
+        .status(400)
+        .json({ error: "La imagen no puede superar los 2Mb" });
+    }
+        */
+
+    const user = await UserModel.findOne({ email: lowerEmail }).select(
+      "-password"
+    );
     if (!user) {
       return res.status(404).json({ error: "Usuario no encontrado" });
     }
+
     if (user.profileImage) {
-      fs.unlink(
-        path.join(__dirname, "..", "uploads", user.profileImage),
-        (err) => {
-          if (err) {
-            console.error("Error al eliminar la imagen anterior", err);
-          }
-        }
-      );
-
-      const { profileImage } = req.files;
-
-      if (profileImage.size > 2000000) {
-        return res
-          .status(400)
-          .json({ error: "La imagen no puede superar los 2Mb" });
+      console.log("Intentando eliminar imagen anterior");
+      try {
+        await fs.promises.unlink(
+          path.join(__dirname, "..", "uploads", user.profileImage)
+        );
+        console.log("Imagen anterior eliminada");
+      } catch (err) {
+        console.error("Error al eliminar la imagen anterior", err);
       }
-
-      const fileName = profileImage.name;
-      const splitName = fileName.split(".");
-      const newFileName =
-        splitName[0] + uuid() + "." + splitName[splitName.length - 1];
-      profileImage.mv(
-        path.join(__dirname, "..", "uploads", newFileName),
-        async (err) => {
-          if (err) {
-            return res.status(500).json({ error: "Error al subir la imagen" });
-          }
-
-          try {
-            const updatedUser = await UserModel.findByIdAndUpdate(
-              user._id,
-              { profileImage, newFileName },
-              { new: true }
-            );
-            if (!updatedUser) {
-              return res
-                .status(404)
-                .json({ error: "Error al actualizar la imagen" });
-            }
-            res.status(200).json({
-              message: "Imagen actualizada con éxito",
-              profileImage: updatedUser.profileImage,
-            });
-          } catch (error) {
-            return res.status(500).json({ error: "Error al subir la imagen" });
-          }
-        }
-      );
     }
+
+    const fileName = profileImage.name;
+    const splitName = fileName.split(".");
+    const newFileName =
+      splitName[0] + uuid() + "." + splitName[splitName.length - 1];
+
+    await profileImage.mv(path.join(__dirname, "..", "uploads", newFileName));
+
+    const updatedUser = await UserModel.findByIdAndUpdate(
+      user._id,
+      { profileImage: newFileName },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "Error al actualizar la imagen" });
+    }
+
+    res.status(200).json({
+      message: "Imagen actualizada con éxito",
+      profileImage: updatedUser.profileImage,
+    });
   } catch (error) {
-    console.log(error);
+    console.error("Error en changeImage:", error);
     return res.status(500).json({ error: "Error al actualizar la imagen" });
   }
 };

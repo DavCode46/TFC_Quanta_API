@@ -9,6 +9,6 @@ router.get("/me/:email", authenticate, userController.getUserByEmail);
 router.post("/register", userController.register);
 router.post("/login", userController.login);
 router.patch("/update", authenticate, userController.updateUserInfo);
-router.patch("/change-image", authenticate, userController.changeImage);
+router.post("/change-image/:email", authenticate, userController.changeImage);
 
 export default router;
