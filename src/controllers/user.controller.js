@@ -92,6 +92,7 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log(req.body);
     if (!email || !password) {
       return res
         .status(400)
@@ -101,10 +102,13 @@ const login = async (req, res) => {
     const lowerEmail = email.toLowerCase();
 
     const user = await UserModel.findOne({ email: lowerEmail });
+    console.log(user);
+
     if (!user) {
       return res.status(400).json({ error: "Credenciales incorrectas" });
     }
     const isMatchPassword = await bcrypt.compare(password, user.password);
+    console.log(isMatchPassword);
     if (!isMatchPassword) {
       return res.status(400).json({ error: "Credenciales incorrectas" });
     }
@@ -153,7 +157,7 @@ const updateUserInfo = async (req, res) => {
     const emailExists = await UserModel.findOne({ email: email }).select(
       "-password"
     );
-    if (emailExists && emailExists._id.toString() !== userId) {
+    if (emailExists && emailExists._id !== userId) {
       return res.status(400).json({ error: "El correo ya está registrado" });
     }
 
@@ -161,11 +165,19 @@ const updateUserInfo = async (req, res) => {
     if (!isMatched) {
       return res.status(400).json({ error: "Credenciales incorrectas" });
     }
+    const lowerEmail = email.toLowerCase();
 
     const updateFields = {
       phone,
-      email,
+      email: lowerEmail,
     };
+
+    const samePassword = await bcrypt.compare(newPassword, user.password);
+    if (samePassword) {
+      return res.status(400).json({
+        error: "La nueva contraseña no puede ser la misma que la actual",
+      });
+    }
 
     if (newPassword) {
       const salt = await bcrypt.genSalt(12);
@@ -190,21 +202,7 @@ const updateUserInfo = async (req, res) => {
       phone: phoneNumber,
     } = updatedUser;
 
-    const token = jwt.sign(
-      {
-        id,
-        username,
-        userEmail,
-        phoneNumber,
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "1d",
-      }
-    );
-
     return res.status(200).json({
-      token,
       id,
       username,
       email: userEmail,
