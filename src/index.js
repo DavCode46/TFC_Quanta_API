@@ -5,6 +5,7 @@ import express from "express";
 import upload from "express-fileupload";
 import mongoose from "mongoose";
 import accountRoutes from "./routes/account.routes.js";
+import cryptoRoutes from "./routes/crypto.routes.js";
 import transactionRoutes from "./routes/transaction.routes.js";
 import userRoutes from "./routes/user.routes.js";
 
@@ -54,6 +55,7 @@ app.use("/uploads", express.static(__dirname + "/uploads"));
 app.use("/api/users", userRoutes);
 app.use("/api/accounts", accountRoutes);
 app.use("/api/transactions", transactionRoutes);
+app.use("/api/cryptos", cryptoRoutes);
 
 mongoose
   .connect(process.env.MONGODB_URI)
