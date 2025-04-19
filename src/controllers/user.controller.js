@@ -84,7 +84,7 @@ const register = async (req, res) => {
 
     await newAccount.save();
 
-    // await sendRegistrationEmail(email, process.env.CLIENT_URL)
+    await sendRegistrationEmail(email, process.env.CLIENT_URL);
 
     return res
       .status(201)
