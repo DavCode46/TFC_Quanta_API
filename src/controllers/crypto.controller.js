@@ -60,7 +60,6 @@ const getCryptoDataById = async (req, res) => {
   const { id } = req.params;
 
   const crypto = cryptoData.find((crypto) => crypto.id === Number(id));
-
   if (!crypto) {
     return res.status(404).json({ error: "Crypto no encontrada" });
   }
@@ -71,7 +70,7 @@ const getCryptoDataById = async (req, res) => {
 const getCompleteCryptoDataById = async (req, res) => {
   const { id } = req.params;
 
-  const crypto = completeCryptoData.find((crypto) => crypto.id === Number(id));
+  const crypto = completeCryptoData[id];
 
   if (!crypto) {
     return res.status(404).json({ error: "Crypto no encontrada" });

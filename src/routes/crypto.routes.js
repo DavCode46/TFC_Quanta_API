@@ -11,7 +11,7 @@ const router = Router();
 
 router.get("/data", authenticate, getCryptoData);
 router.get("/complete-data", authenticate, getCompleteCryptosData);
-router.get("/get-data/:id", authenticate, getCryptoDataById);
-router.get("/get.complete-data/:id", authenticate, getCompleteCryptoDataById);
+router.get("/data/:id", authenticate, getCryptoDataById);
+router.get("/complete-data/:id", authenticate, getCompleteCryptoDataById);
 
 export default router;
