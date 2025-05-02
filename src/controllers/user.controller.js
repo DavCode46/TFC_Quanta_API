@@ -8,6 +8,7 @@ import { v4 as uuid } from "uuid";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+import mongoose from "mongoose";
 import AccountModel from "../models/Account.model.js";
 import UserModel from "../models/User.model.js";
 import generateUniqueIBAN from "../utils/generateAccount.js";
@@ -48,6 +49,12 @@ const register = async (req, res) => {
       return res
         .status(400)
         .json({ error: "El número de teléfono no es válido" });
+    }
+    const phoneExists = await UserModel.findOne({ phone: phone });
+    if (phoneExists) {
+      return res
+        .status(400)
+        .json({ error: "El número de teléfono ya está registrado" });
     }
 
     if (!PASSWORD_PATTERN.test(password)) {
@@ -92,6 +99,7 @@ const register = async (req, res) => {
         `Usuario ${user.email} registrado con éxito y cuenta creada con número ${newAccount.account_number}`
       );
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ error: "Error al registrar el usuario" });
   }
 };
@@ -145,7 +153,19 @@ const login = async (req, res) => {
 const updateUserInfo = async (req, res) => {
   try {
     const { userId, phone, email, currentPassword, newPassword } = req.body;
-    console.log(req.body);
+
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Credenciales incorrectas" });
+    }
+
+    const correctPassword = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
+    if (!correctPassword) {
+      return res.status(400).json({ error: "Credenciales incorrectas" });
+    }
 
     if (phone && !PHONE_NUMBER_PATTERN.test(phone)) {
       return res
@@ -157,15 +177,10 @@ const updateUserInfo = async (req, res) => {
       return res.status(400).json({ error: "El correo no es válido" });
     }
 
-    const user = await UserModel.findById(userId);
-    if (!user) {
-      return res.status(404).json({ error: "Credenciales incorrectas" });
-    }
-
     const emailExists = await UserModel.findOne({ email: email }).select(
       "-password"
     );
-    if (emailExists && emailExists._id !== userId) {
+    if (emailExists && emailExists._id.toString() !== userId) {
       return res.status(400).json({ error: "El correo ya está registrado" });
     }
 
@@ -308,4 +323,48 @@ const getUserByEmail = async (req, res) => {
   }
 };
 
-export { changeImage, getUserByEmail, login, register, updateUserInfo };
+const deleteAccount = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const user = await UserModel.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    const account = await AccountModel.findOne({ user: userId });
+
+    if (!account) {
+      return res.status(404).json({ error: "Cuenta no encontrada" });
+    }
+
+    account.status = "cerrada";
+
+    const profileImage = user.profileImage;
+
+    if (profileImage) {
+      const filePath = path.resolve(__dirname, "..", "uploads", profileImage);
+      fs.promises
+        .unlink(filePath)
+        .catch((err) =>
+          console.error("Error al eliminar imagen de perfil:", err)
+        );
+    }
+    await account.save();
+    await UserModel.findByIdAndDelete(userId);
+
+    return res.status(200).json({ message: "Cuenta eliminada con éxito" });
+  } catch (err) {
+    console.error("Error en deleteAccount:", err);
+    return res.status(500).json({ error: "Error al eliminar la cuenta" });
+  }
+};
+
+export {
+  changeImage,
+  deleteAccount,
+  getUserByEmail,
+  login,
+  register,
+  updateUserInfo,
+};
