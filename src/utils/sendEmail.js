@@ -110,7 +110,8 @@ export const sendResetPasswordEmail = async (to, resetCode) => {
             margin-bottom: 20px;
           }
           .code-box {
-            display: inline-block;
+            display: block;
+            width: fit-content;
             background-color: #f0f0f0;
             padding: 16px 24px;
             border-radius: 6px;
