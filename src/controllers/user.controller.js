@@ -152,7 +152,19 @@ const login = async (req, res) => {
 const updateUserInfo = async (req, res) => {
   try {
     const { userId, phone, email, currentPassword, newPassword } = req.body;
-    console.log(req.body);
+
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Credenciales incorrectas" });
+    }
+
+    const correctPassword = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
+    if (!correctPassword) {
+      return res.status(400).json({ error: "Credenciales incorrectas" });
+    }
 
     if (phone && !PHONE_NUMBER_PATTERN.test(phone)) {
       return res
@@ -164,15 +176,10 @@ const updateUserInfo = async (req, res) => {
       return res.status(400).json({ error: "El correo no es válido" });
     }
 
-    const user = await UserModel.findById(userId);
-    if (!user) {
-      return res.status(404).json({ error: "Credenciales incorrectas" });
-    }
-
     const emailExists = await UserModel.findOne({ email: email }).select(
       "-password"
     );
-    if (emailExists && emailExists._id !== userId) {
+    if (emailExists && emailExists._id.toString() !== userId) {
       return res.status(400).json({ error: "El correo ya está registrado" });
     }
 
