@@ -49,6 +49,12 @@ const register = async (req, res) => {
         .status(400)
         .json({ error: "El número de teléfono no es válido" });
     }
+    const phoneExists = await UserModel.findOne({ phone: phone });
+    if (phoneExists) {
+      return res
+        .status(400)
+        .json({ error: "El número de teléfono ya está registrado" });
+    }
 
     if (!PASSWORD_PATTERN.test(password)) {
       return res.status(400).json({
@@ -92,6 +98,7 @@ const register = async (req, res) => {
         `Usuario ${user.email} registrado con éxito y cuenta creada con número ${newAccount.account_number}`
       );
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ error: "Error al registrar el usuario" });
   }
 };
