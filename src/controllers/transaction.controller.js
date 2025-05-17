@@ -58,13 +58,12 @@ const withdrawMoney = async (req, res) => {
     }
 
     const account = await Account.findOne({ account_number: account_number });
+    if (!account) {
+      return res.status(404).json({ error: "La cuenta no existe" });
+    }
 
     if (account.balance < amount) {
       return res.status(400).json({ error: "Saldo insuficiente" });
-    }
-
-    if (!account) {
-      return res.status(404).json({ error: "La cuenta no existe" });
     }
 
     account.balance -= amount;
