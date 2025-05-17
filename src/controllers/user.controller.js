@@ -91,7 +91,9 @@ const register = async (req, res) => {
 
     await newAccount.save();
 
-    await sendRegistrationEmail(email, process.env.CLIENT_URL);
+    if (process.env.NODE_ENV !== "test") {
+      await sendRegistrationEmail(email, process.env.CLIENT_URL);
+    }
 
     return res
       .status(201)
@@ -131,7 +133,7 @@ const login = async (req, res) => {
     const { _id: id, username, email: userEmail, phone, profileImage } = user;
     const token = jwt.sign(
       { id, username, userEmail, phone },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || "testsecret",
       {
         expiresIn: "1d",
       }

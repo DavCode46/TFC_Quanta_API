@@ -1,5 +1,4 @@
 import Account from "../models/Account.model.js";
-import ErrorModel from "../models/Error.model.js";
 import User from "../models/User.model.js";
 import generateUniqueIBAN from "../utils/generateAccount.js";
 
@@ -9,7 +8,9 @@ const createAccount = async (req, res, next) => {
 
     const user = await User.findById(userId);
     if (!user) {
-      return next(new ErrorModel("El usuario no existe", 404));
+      return res.status(404).json({
+        error: "El usuario no existe",
+      });
     }
 
     const randomAccountNumber = await generateUniqueIBAN();
