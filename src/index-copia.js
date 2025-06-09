@@ -42,7 +42,6 @@ app.use(
     origin: function (origin, callback) {
       console.log("Request from:", origin);
       if (!origin) {
-        // ✅ permitir peticiones sin origin (React Native, Postman, etc.)
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));

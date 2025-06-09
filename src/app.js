@@ -1,4 +1,3 @@
-// src/app.js
 import compression from "compression";
 import cors from "cors";
 import express from "express";
@@ -8,17 +7,16 @@ import { fileURLToPath } from "url";
 
 import accountRoutes from "./routes/account.routes.js";
 import cryptoRoutes from "./routes/crypto.routes.js";
+import faqRoutes from "./routes/faq.routes.js";
 import resetRoutes from "./routes/resetPassword.routes.js";
 import transactionRoutes from "./routes/transaction.routes.js";
 import userRoutes from "./routes/user.routes.js";
 
-// compute __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
 
-// middlewares
 app.use(
   compression({
     level: 6,
@@ -42,17 +40,15 @@ app.use(
 );
 app.use(upload());
 
-// static uploads folder
 app.use("/uploads", express.static(join(__dirname, "uploads")));
 
-// routes
 app.use("/api/users", userRoutes);
 app.use("/api/accounts", accountRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/cryptos", cryptoRoutes);
 app.use("/api/password", resetRoutes);
+app.use("/api/faq", faqRoutes);
 
-// health check
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "OK" });
 });
