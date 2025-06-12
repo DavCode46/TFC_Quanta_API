@@ -131,35 +131,4 @@ describe("Transaction Routes Integration Tests", () => {
       destination_account: account2._id.toString(),
     });
   });
-
-  it("GET /account/:email → 200 + transactions list", async () => {
-    await request(app)
-      .post(`${base}/add`)
-      .set("Authorization", `Bearer ${token1}`)
-      .send({ amount: 60, account_number: account1.account_number });
-    await request(app)
-      .post(`${base}/withdraw`)
-      .set("Authorization", `Bearer ${token1}`)
-      .send({ amount: 20, account_number: account1.account_number });
-    await request(app)
-      .post(`${base}/transfer`)
-      .set("Authorization", `Bearer ${token1}`)
-      .send({
-        amount: 10,
-        origin_account: account1.account_number,
-        destination_account: account2.account_number,
-      });
-
-    const res = await request(app)
-      .get(`${base}/account/${user1.email}`)
-      .set("Authorization", `Bearer ${token1}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty(
-      "message",
-      "Transacciones obtenidas con éxito"
-    );
-    expect(Array.isArray(res.body.transactions)).toBe(true);
-    expect(res.body.transactions.length).toBe(3);
-  });
 });

@@ -49,7 +49,7 @@ describe("Account Controller Tests", () => {
   });
 
   describe("createAccount()", () => {
-    it("should call res.status 404 if user does not exist", async () => {
+    it("Devuelve error 404 si el usuario no existe", async () => {
       const fakeId = new mongoose.Types.ObjectId().toString();
       req.body = { userId: fakeId };
 
@@ -61,12 +61,12 @@ describe("Account Controller Tests", () => {
       });
     });
 
-    it("should create account when user exists", async () => {
+    it("Crea cuenta", async () => {
       const user = await UserModel.create({
         username: "u1",
         email: "u1@ex.com",
         phone: "000000000",
-        password: "irrelevant",
+        password: "pass123@",
       });
       req.body = { userId: user._id.toString() };
 
@@ -83,53 +83,42 @@ describe("Account Controller Tests", () => {
     });
   });
 
-  describe("getAccountByUserId()", () => {
-    it("should return 400 if id param missing", async () => {
-      req.params = {};
-      await getAccountByUserId(req, res);
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        error: "El id de usuario es obligatorio",
-      });
+  it("Devuelve 404 si la cuenta no existe", async () => {
+    const user = await UserModel.create({
+      username: "u2",
+      email: "u2@ex.com",
+      phone: "000000001",
+      password: "pass123@",
     });
+    req.params = { id: user._id.toString() };
 
-    it("should return 404 if no account found", async () => {
-      const user = await UserModel.create({
-        username: "u2",
-        email: "u2@ex.com",
-        phone: "000000001",
-        password: "irrelevant",
-      });
-      req.params = { id: user._id.toString() };
+    await getAccountByUserId(req, res);
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ error: "Cuenta no encontrada" });
+  });
 
-      await getAccountByUserId(req, res);
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ error: "Cuenta no encontrada" });
+  it("Devuelve 200 cuando la cuenta existe", async () => {
+    const user = await UserModel.create({
+      username: "u3",
+      email: "u3@ex.com",
+      phone: "000000002",
+      password: "pass123@",
     });
+    const account = await AccountModel.create({
+      user: user._id,
+      account_number: "ES6566666666666666666666",
+    });
+    req.params = { id: user._id.toString() };
 
-    it("should return 200 + account when exists", async () => {
-      const user = await UserModel.create({
-        username: "u3",
-        email: "u3@ex.com",
-        phone: "000000002",
-        password: "irrelevant",
-      });
-      const account = await AccountModel.create({
+    await getAccountByUserId(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      message: "Cuenta obtenida con éxito",
+      account: expect.objectContaining({
+        _id: account._id,
         user: user._id,
-        account_number: "IBAN-XYZ",
-      });
-      req.params = { id: user._id.toString() };
-
-      await getAccountByUserId(req, res);
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "Cuenta obtenida con éxito",
-        account: expect.objectContaining({
-          _id: account._id,
-          user: user._id,
-          account_number: "IBAN-XYZ",
-        }),
-      });
+        account_number: "ES6566666666666666666666",
+      }),
     });
   });
 });

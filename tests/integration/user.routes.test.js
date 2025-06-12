@@ -33,20 +33,20 @@ describe("User Routes Tests", () => {
       confirmPassword: "Abc@1234",
     });
     expect(res.status).toBe(201);
-    expect(res.body).toMatch(/Usuario test@int.com registrado con éxito/);
+    expect(res.body).toMatch(/Usuario test@test.com registrado con éxito/);
   });
 
   it("POST /login → 200 + token", async () => {
     await request(app).post(`${base}/register`).send({
       username: "test2",
-      email: "test2@int.com",
+      email: "test2@test.com",
       phone: "987654321",
       password: "Abc@1234",
       confirmPassword: "Abc@1234",
     });
     const res = await request(app)
       .post(`${base}/login`)
-      .send({ email: "test2@int.com", password: "Abc@1234" });
+      .send({ email: "test2@test.com", password: "Abc@1234" });
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("token");
     token = res.body.token;
@@ -54,14 +54,14 @@ describe("User Routes Tests", () => {
 
   it("GET /me/:email → 200 + user", async () => {
     const res = await request(app)
-      .get(`${base}/me/test2@int.com`)
+      .get(`${base}/me/test2@test.com`)
       .set("Authorization", `Bearer ${token}`);
     expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty("email", "test2@int.com");
+    expect(res.body).toHaveProperty("email", "test2@test.com");
   });
 
   it("DELETE /delete/:userId → 200 + message", async () => {
-    const created = await UserModel.findOne({ email: "test2@int.com" });
+    const created = await UserModel.findOne({ email: "test2@test.com" });
     const res = await request(app)
       .delete(`${base}/delete/${created._id}`)
       .set("Authorization", `Bearer ${token}`);

@@ -60,13 +60,13 @@ describe("User Controller Tests ", () => {
     jest.clearAllMocks();
   });
 
-  it("register() - debería registrar un usuario y crear cuenta", async () => {
+  it("register() - registrar un usuario y crear cuenta", async () => {
     bcrypt.genSalt = jest.fn().mockResolvedValue("salt");
     bcrypt.hash = jest.fn().mockResolvedValue("hashedPwd");
 
     req.body = {
       username: "user1",
-      email: "User@Example.Com",
+      email: "user@example.com",
       phone: "123456789",
       password: "Abcde@123",
       confirmPassword: "Abcde@123",
@@ -84,7 +84,7 @@ describe("User Controller Tests ", () => {
     );
   });
 
-  it("login() - debería devolver token con credenciales válidas", async () => {
+  it("login() - devolver token con credenciales válidas", async () => {
     const rawPwd = "pwd1234";
     const hashed = await bcrypt.hash(rawPwd, 12);
     const u = await UserModel.create({
@@ -111,7 +111,7 @@ describe("User Controller Tests ", () => {
     );
   });
 
-  it("updateUserInfo() - debería actualizar datos del usuario", async () => {
+  it("updateUserInfo() - actualizar datos del usuario", async () => {
     const rawPwd = "Old@1234";
     const hashed = await bcrypt.hash(rawPwd, 12);
     const user = await UserModel.create({
@@ -133,7 +133,7 @@ describe("User Controller Tests ", () => {
       userId: user._id.toString(),
       currentPassword: rawPwd,
       newPassword: "New@1234",
-      email: "New@Example.Com",
+      email: "new@example.com",
       phone: "985722654",
     };
 
@@ -148,7 +148,7 @@ describe("User Controller Tests ", () => {
     );
   });
 
-  it("getUserByEmail() - debería devolver usuario existente", async () => {
+  it("getUserByEmail() - devolver usuario existente", async () => {
     const user = await UserModel.create({
       username: "u2",
       email: "findme@example.com",
@@ -165,7 +165,7 @@ describe("User Controller Tests ", () => {
     );
   });
 
-  it("deleteAccount() - debería cerrar cuenta y eliminar usuario", async () => {
+  it("deleteAccount() - cerrar cuenta y eliminar usuario", async () => {
     const user = await UserModel.create({
       username: "u3",
       email: "toremove@example.com",

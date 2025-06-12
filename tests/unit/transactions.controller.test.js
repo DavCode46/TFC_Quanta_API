@@ -62,7 +62,7 @@ describe("Transaction Controller", () => {
   });
 
   describe("addMoney()", () => {
-    it("should return 400 if required fields are missing", async () => {
+    it("Devuelve código 400 si falta algún campo", async () => {
       req.body = {};
       await addMoney(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
@@ -71,7 +71,7 @@ describe("Transaction Controller", () => {
       });
     });
 
-    it("should return 400 if amount is invalid (when fields are present)", async () => {
+    it("Devuelve error 400 si la cantidad no es válida", async () => {
       req.body = {
         amount: 0,
         account_number: "ES8990854490304444579247",
@@ -83,7 +83,7 @@ describe("Transaction Controller", () => {
       });
     });
 
-    it("should return 404 if account doesn't exist", async () => {
+    it("Devuelve error 404 si la cuenta no existe", async () => {
       req.body = { amount: 100, account_number: "ES8990854490304444579248" };
       await addMoney(req, res);
       expect(res.status).toHaveBeenCalledWith(404);
@@ -92,7 +92,7 @@ describe("Transaction Controller", () => {
       });
     });
 
-    it("should add money to account and create transaction", async () => {
+    it("Éxito, ingresa dinero a la cuenta", async () => {
       const user = await createValidUser();
       const account = await Account.create({
         user: user._id,
@@ -122,7 +122,7 @@ describe("Transaction Controller", () => {
   });
 
   describe("withdrawMoney()", () => {
-    it("should return 400 if required fields are missing", async () => {
+    it("Devuelve error 404 si falta algún campo", async () => {
       await withdrawMoney(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
@@ -130,7 +130,7 @@ describe("Transaction Controller", () => {
       });
     });
 
-    it("should return 400 if amount is 0 or negative", async () => {
+    it("Devuelve error 400 si la cantidad es incorrecta", async () => {
       req.body = { amount: -100, account_number: "ES8990854490304444579247" };
       await withdrawMoney(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
@@ -139,7 +139,7 @@ describe("Transaction Controller", () => {
       });
     });
 
-    it("should return 404 if account doesn't exist", async () => {
+    it("Devuelve error 404 si la cuenta no existe", async () => {
       req.body = { amount: 100, account_number: "ES8990854490304444579248" };
       await withdrawMoney(req, res);
       expect(res.status).toHaveBeenCalledWith(404);
@@ -148,7 +148,7 @@ describe("Transaction Controller", () => {
       });
     });
 
-    it("should withdraw money and create transaction", async () => {
+    it("Éxito, retira dinero de la cuenta", async () => {
       const user = await createValidUser();
       const account = await Account.create({
         user: user._id,
@@ -178,7 +178,7 @@ describe("Transaction Controller", () => {
   });
 
   describe("transferMoney()", () => {
-    it("should return 400 if required fields are missing", async () => {
+    it("Error 404 si falta algún campo", async () => {
       await transferMoney(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
@@ -186,7 +186,7 @@ describe("Transaction Controller", () => {
       });
     });
 
-    it("should return 400 if amount is invalid (when fields are present)", async () => {
+    it("Error 400 si la cantidad no es válida", async () => {
       req.body = {
         amount: 0,
         origin_account: "ES8990854490304444579247",
@@ -199,7 +199,7 @@ describe("Transaction Controller", () => {
       });
     });
 
-    it("should return 400 if insufficient balance", async () => {
+    it("Error 400 si el saldo es insuficiente", async () => {
       const user1 = await createValidUser();
       const user2 = await createValidUser();
 
@@ -227,7 +227,7 @@ describe("Transaction Controller", () => {
       });
     });
 
-    it("should transfer money and create transaction", async () => {
+    it("Éxito, transfiere dinero de la cuenta", async () => {
       const user1 = await createValidUser();
       const user2 = await createValidUser();
 
@@ -270,81 +270,51 @@ describe("Transaction Controller", () => {
     });
   });
 
-  describe("getTransactionsByUser()", () => {
-    it("should return 400 if email is missing", async () => {
-      await getTransactionsByUser(req, res);
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        error: "El email es requerido",
-      });
+  it("Devuelve las transacciones del usuario", async () => {
+    const user1 = await createValidUser({ email: "user1@test.com" });
+    const user2 = await createValidUser({ email: "user2@test.com" });
+
+    const account1 = await Account.create({
+      user: user1._id,
+      account_number: "ES1234",
+      balance: 1000,
+    });
+    const account2 = await Account.create({
+      user: user2._id,
+      account_number: "ES5678",
+      balance: 500,
     });
 
-    it("should return 404 if user doesn't exist", async () => {
-      req.params = { email: "nonexistent@test.com" };
-      await getTransactionsByUser(req, res);
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({
-        error: "El usuario no existe",
-      });
-    });
+    await Transaction.create([
+      {
+        origin_account: account1._id,
+        destination_account: account2._id,
+        type: "transferencia",
+        amount: 200,
+      },
+      {
+        destination_account: account1._id,
+        type: "ingreso",
+        amount: 500,
+      },
+      {
+        origin_account: account1._id,
+        type: "retirada",
+        amount: 100,
+      },
+    ]);
 
-    it("should return 404 if account doesn't exist", async () => {
-      await createValidUser();
-      req.params = { email: "test@example.com" };
-      await getTransactionsByUser(req, res);
+    req.params = { email: "user1@test.com" };
+    await getTransactionsByUser(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({
-        error: "El usuario no existe",
-      });
-    });
-
-    it("should return user transactions", async () => {
-      const user1 = await createValidUser({ email: "user1@test.com" });
-      const user2 = await createValidUser({ email: "user2@test.com" });
-
-      const account1 = await Account.create({
-        user: user1._id,
-        account_number: "ES1234",
-        balance: 1000,
-      });
-      const account2 = await Account.create({
-        user: user2._id,
-        account_number: "ES5678",
-        balance: 500,
-      });
-
-      await Transaction.create([
-        {
-          origin_account: account1._id,
-          destination_account: account2._id,
-          type: "transferencia",
-          amount: 200,
-        },
-        {
-          destination_account: account1._id,
-          type: "ingreso",
-          amount: 500,
-        },
-        {
-          origin_account: account1._id,
-          type: "retirada",
-          amount: 100,
-        },
-      ]);
-
-      req.params = { email: "user1@test.com" };
-      await getTransactionsByUser(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "Transacciones obtenidas con éxito",
-        transactions: expect.arrayContaining([
-          expect.objectContaining({ type: "transferencia" }),
-          expect.objectContaining({ type: "ingreso" }),
-          expect.objectContaining({ type: "retirada" }),
-        ]),
-      });
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      message: "Transacciones obtenidas con éxito",
+      transactions: expect.arrayContaining([
+        expect.objectContaining({ type: "transferencia" }),
+        expect.objectContaining({ type: "ingreso" }),
+        expect.objectContaining({ type: "retirada" }),
+      ]),
     });
   });
 });

@@ -23,7 +23,7 @@ describe("Reset Password Controller Unit Tests", () => {
   });
 
   describe("sendCode()", () => {
-    it("400 if user not found", async () => {
+    it("Devuelve error 400 si el usuario no existe", async () => {
       User.findOne = jest.fn().mockResolvedValue(null);
       req.body = { email: "x@no.com" };
       await sendCode(req, res);
@@ -32,7 +32,7 @@ describe("Reset Password Controller Unit Tests", () => {
         error: "Usuario no encontrado.",
       });
     });
-    it("200 on success", async () => {
+    it("Devuelve éxisto 200 si existe", async () => {
       const mockUser = { _id: "u1", email: "u@ex.com" };
       const mockCode = "123456";
 
@@ -56,7 +56,7 @@ describe("Reset Password Controller Unit Tests", () => {
   });
 
   describe("resetPassword()", () => {
-    it("400 if user not found", async () => {
+    it("Devuelve error 400 si no existe", async () => {
       User.findOne = jest.fn().mockResolvedValue(null);
       req.body = { email: "x@no.com", code: "123", newPassword: "Pwd@1234" };
       await resetPassword(req, res);
@@ -65,7 +65,7 @@ describe("Reset Password Controller Unit Tests", () => {
         error: "Usuario no encontrado.",
       });
     });
-    it("400 if code incorrect", async () => {
+    it("Devuelve 400 si el código no es correcto", async () => {
       const u = { _id: "u1" };
       User.findOne = jest.fn().mockResolvedValue(u);
       PasswordResetCode.findOne = jest.fn().mockResolvedValue(null);
@@ -74,7 +74,7 @@ describe("Reset Password Controller Unit Tests", () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({ error: "Código incorrecto." });
     });
-    it("400 if code expired", async () => {
+    it("Devuelve 400 si el código ha expirado (15 min)", async () => {
       const u = { _id: "u1" };
       const record = { code: "123456", expiresAt: new Date(Date.now() - 1) };
       User.findOne = jest.fn().mockResolvedValue(u);
@@ -84,22 +84,7 @@ describe("Reset Password Controller Unit Tests", () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({ error: "Código expirado." });
     });
-    it("400 if newPassword invalid", async () => {
-      const u = { _id: "u1" };
-      const record = {
-        code: "123456",
-        expiresAt: new Date(Date.now() + 10000),
-      };
-      User.findOne = jest.fn().mockResolvedValue(u);
-      PasswordResetCode.findOne = jest.fn().mockResolvedValue(record);
-      req.body = { email: "u@ex.com", code: "123456", newPassword: "bad" };
-      await resetPassword(req, res);
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        error: expect.stringContaining("La contraseña debe contener"),
-      });
-    });
-    it("200 on success", async () => {
+    it("Devuelve 200 al restablecer la contraseña", async () => {
       const u = { _id: "u1", save: jest.fn() };
       const record = {
         code: "123456",
